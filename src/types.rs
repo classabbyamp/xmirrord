@@ -134,6 +134,7 @@ impl FromRedis for Protocol {
 #[derive(Debug, Clone, Serialize)]
 pub struct Mirror {
     pub id: u64,
+    pub name: String,
     pub baseurl: String,
     pub region: Region,
     pub location: String,
@@ -146,6 +147,7 @@ impl Default for Mirror {
     fn default() -> Self {
         Self {
             id: 0,
+            name: "".into(),
             baseurl: "unknown".into(),
             region: Region::Unknown,
             location: "unkonwn".into(),
@@ -172,6 +174,16 @@ impl FromRedis for Mirror {
                 "Could not convert value to mirror (baseurl)",
             ));
         }
+
+        if let Some(v) = value.get(&RedisKey::from_static_str("name")) {
+            mirror.name = v.as_string().ok_or(RedisError::new(
+                RedisErrorKind::Parse,
+                "Could not convert value to mirror (name)",
+            ))?;
+        } else {
+            mirror.name = mirror.baseurl.clone();
+        }
+
 
         if let Some(v) = value.get(&RedisKey::from_static_str("region")) {
             mirror.region = Region::from_value(v.clone())?;

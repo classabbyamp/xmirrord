@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+actix-files = "0.6.6"
 actix-web = "4"
 anyhow = "1"
 confik = { version = "0.11", features = ["json", "url"] }
@@ -13,3 +14,4 @@ fred = "9"
 futures = "0.3.30"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
+tera = "1.20.0"

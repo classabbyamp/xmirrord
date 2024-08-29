@@ -1,5 +1,7 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{error, get, web, App, HttpServer, Responder, Result};
+use actix_files::Files;
 use log::info;
+use tera::{Context, Tera};
 
 use crate::database::Database;
 
@@ -9,13 +11,12 @@ mod legacy;
 mod types;
 
 #[get("/")]
-async fn index() -> impl Responder {
-    HttpResponse::Ok().body("hewoo????")
-}
-
-#[get("/metrics/prometheus.json")]
-async fn metrics() -> impl Responder {
-    HttpResponse::Ok().body("{}")
+async fn index(db: web::Data<Database>, tmpl: web::Data<Tera>) -> Result<impl Responder, actix_web::Error> {
+    let mut ctx = Context::new();
+    let mirrors = db.get_all_mirrors().await.map_err(|e| error::ErrorInternalServerError(e))?;
+    ctx.insert("mirrors", &mirrors);
+    let html = tmpl.render("index.html", &ctx).map_err(|_| error::ErrorInternalServerError("Template error"))?;
+    Ok(web::Html::new(html))
 }
 
 #[actix_web::main]
@@ -27,11 +28,14 @@ async fn main() -> anyhow::Result<()> {
     let db = Database::try_init(&conf.database_url, conf.database_pool_size).await?;
     info!("Connected to database at {}", conf.database_url);
 
+    let tera = Tera::new(&(conf.files_dir.clone() + "/templates/*"))?;
+
     Ok(HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db.clone()))
+            .app_data(web::Data::new(tera.clone()))
+            .service(Files::new("/static", conf.files_dir.clone() + "/static"))
             .service(index)
-            .service(metrics)
             .configure(legacy::config)
     })
     .bind(conf.bind_addr)?

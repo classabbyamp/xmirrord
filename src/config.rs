@@ -14,6 +14,9 @@ pub struct Config {
     /// number of database connections to pool
     #[confik(default = 8_usize)]
     pub database_pool_size: usize,
+    /// directory containing static files (static/) and templates (template/)
+    #[confik(default = ".")]
+    pub files_dir: String,
 }
 
 /// A configuration source for [`confik`]. It is the same as [`confik::FileSource`]
